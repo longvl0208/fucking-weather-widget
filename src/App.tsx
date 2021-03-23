@@ -12,6 +12,11 @@ import moment from "moment";
 import { computeTemp } from "./utils";
 import EmptyData from "./components/empty-data";
 
+const REACT_APP_OPEN_WEATHER_MAP_KEY = "1c5da32bd6a0d1c4c017b21b49833c7f";
+const REACT_APP_OPEN_WEATHER_API =
+    "http://api.openweathermap.org/geo/1.0/direct";
+const REACT_APP_OPEN_WEATHER_ICON = "http://openweathermap.org/img/wn/";
+
 const override = css`
     display: block;
     margin: 0 auto;
@@ -42,11 +47,11 @@ function App(): JSX.Element {
     const fetchLocationLatLong = (value: string) => {
         setLoading(true);
         axios
-            .get(`${process.env.REACT_APP_OPEN_WEATHER_API}`, {
+            .get(`${REACT_APP_OPEN_WEATHER_API}`, {
                 params: {
                     q: value,
                     limit: 5,
-                    appid: process.env.REACT_APP_OPEN_WEATHER_MAP_KEY,
+                    appid: REACT_APP_OPEN_WEATHER_MAP_KEY,
                 },
             })
             .then((response) => {
@@ -69,7 +74,7 @@ function App(): JSX.Element {
                     lat,
                     lon,
                     exclude: "alerts",
-                    appid: process.env.REACT_APP_OPEN_WEATHER_MAP_KEY,
+                    appid: REACT_APP_OPEN_WEATHER_MAP_KEY,
                 },
             })
             .then((response) => {
@@ -165,10 +170,7 @@ function App(): JSX.Element {
                                     <img
                                         src={
                                             !isEmpty(mainData)
-                                                ? `${
-                                                      process.env
-                                                          .REACT_APP_OPEN_WEATHER_ICON
-                                                  }${get(
+                                                ? `${REACT_APP_OPEN_WEATHER_ICON}${get(
                                                       mainData,
                                                       "weather[0].icon"
                                                   )}@2x.png`
