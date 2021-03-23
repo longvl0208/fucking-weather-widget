@@ -9,7 +9,7 @@ interface Props {
     timezone: string;
     tempType: string;
 }
-const REACT_APP_OPEN_WEATHER_ICON = "http://openweathermap.org/img/wn/";
+const REACT_APP_OPEN_WEATHER_ICON = "https://openweathermap.org/img/wn/";
 
 const WeatherCard = ({
     item,

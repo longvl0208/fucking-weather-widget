@@ -14,8 +14,8 @@ import EmptyData from "./components/empty-data";
 
 const REACT_APP_OPEN_WEATHER_MAP_KEY = "1c5da32bd6a0d1c4c017b21b49833c7f";
 const REACT_APP_OPEN_WEATHER_API =
-    "http://api.openweathermap.org/geo/1.0/direct";
-const REACT_APP_OPEN_WEATHER_ICON = "http://openweathermap.org/img/wn/";
+    "https://api.openweathermap.org/geo/1.0/direct";
+const REACT_APP_OPEN_WEATHER_ICON = "https://openweathermap.org/img/wn/";
 
 const override = css`
     display: block;
