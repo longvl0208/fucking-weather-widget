@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import "./App.scss";
 import Search from "./components/search";
 import DegreeFormat from "./components/degree-format";
@@ -16,6 +16,8 @@ const REACT_APP_OPEN_WEATHER_MAP_KEY = "1c5da32bd6a0d1c4c017b21b49833c7f";
 const REACT_APP_OPEN_WEATHER_API =
     "https://api.openweathermap.org/geo/1.0/direct";
 const REACT_APP_OPEN_WEATHER_ICON = "https://openweathermap.org/img/wn/";
+const REACT_APP_AIR_POPULATION_DATA_API =
+    "https://api.openweathermap.org/data/2.5/air_pollution";
 
 const override = css`
     display: block;
@@ -43,6 +45,7 @@ function App(): JSX.Element {
     const [coordinate, setCoordinate] = useState(defaultCoordinate);
     const [weatherData, setWeatherData] = useState({});
     const [mainData, setMainData] = useState({});
+    const [airPopulate, setAirPopulate] = useState(0);
 
     const fetchLocationLatLong = (value: string) => {
         setLoading(true);
@@ -66,6 +69,27 @@ function App(): JSX.Element {
             });
     };
 
+    const getCurrentAirPopulationData = (lat: number, lon: number) => {
+        axios
+            .get(`${REACT_APP_AIR_POPULATION_DATA_API}`, {
+                params: {
+                    lat,
+                    lon,
+                    appid: REACT_APP_OPEN_WEATHER_MAP_KEY,
+                },
+            })
+            .then((response) => {
+                const { data } = response;
+                setAirPopulate(data.list[0].main.aqi);
+            })
+            .catch((error) => {
+                console.log("error", error);
+            })
+            .finally(() => {
+                setLoading(false);
+            });
+    };
+
     const getWeather = (lat: number, lon: number) => {
         setLoading(true);
         axios
@@ -80,6 +104,7 @@ function App(): JSX.Element {
             })
             .then((response) => {
                 const { data } = response;
+                getCurrentAirPopulationData(lat, lon);
                 setWeatherData({
                     current: data.current,
                     daily: data.daily,
@@ -108,6 +133,7 @@ function App(): JSX.Element {
     useEffect(() => {
         if (!isEqual(coordinate, defaultCoordinate))
             getWeather(coordinate.lat, coordinate.lon);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [coordinate]);
 
     const handleChangeTempType = (value: string) => {
@@ -119,8 +145,24 @@ function App(): JSX.Element {
         setMainData(newData);
     };
 
-    console.log("isEmpty(weatherData)", isEmpty(weatherData));
-    console.log("weatherData", weatherData);
+    const calculateAirQuanlity = useMemo(() => {
+        const aqi = airPopulate;
+        switch (aqi) {
+            case 1:
+                return "Good";
+            case 2:
+                return "Fair";
+            case 3:
+                return "Moderate";
+            case 4:
+                return "Poor";
+            case 5:
+                return "Very Poor";
+
+            default:
+                break;
+        }
+    }, [airPopulate]);
 
     return (
         <div className="App">
@@ -217,7 +259,9 @@ function App(): JSX.Element {
                                     </p>
                                     {!isEmpty(mainData) &&
                                     !get(mainData, "isSubData") ? (
-                                        <p>Air Quality: Like Shit</p>
+                                        <p>
+                                            Air Quality: {calculateAirQuanlity}
+                                        </p>
                                     ) : (
                                         ""
                                     )}
