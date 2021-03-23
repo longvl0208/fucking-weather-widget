@@ -74,6 +74,7 @@ function App(): JSX.Element {
                     lat,
                     lon,
                     exclude: "alerts",
+                    units: tempType === tempTypeEnums.F ? "imperial" : "metric",
                     appid: REACT_APP_OPEN_WEATHER_MAP_KEY,
                 },
             })
