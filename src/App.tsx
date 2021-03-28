@@ -12,12 +12,12 @@ import moment from "moment";
 import { computeTemp } from "./utils";
 import EmptyData from "./components/empty-data";
 
-const REACT_APP_OPEN_WEATHER_MAP_KEY = "1c5da32bd6a0d1c4c017b21b49833c7f";
-const REACT_APP_OPEN_WEATHER_API =
-    "https://api.openweathermap.org/geo/1.0/direct";
-const REACT_APP_OPEN_WEATHER_ICON = "https://openweathermap.org/img/wn/";
+const REACT_APP_OPEN_WEATHER_MAP_KEY =
+    process.env.REACT_APP_OPEN_WEATHER_MAP_KEY;
+const REACT_APP_OPEN_WEATHER_API = process.env.REACT_APP_OPEN_WEATHER_API;
+const REACT_APP_OPEN_WEATHER_ICON = process.env.REACT_APP_OPEN_WEATHER_ICON;
 const REACT_APP_AIR_POPULATION_DATA_API =
-    "https://api.openweathermap.org/data/2.5/air_pollution";
+    process.env.REACT_APP_AIR_POPULATION_DATA_API;
 
 const override = css`
     display: block;
@@ -33,10 +33,10 @@ const defaultCoordinate = {
     name: "Unknown",
 };
 
-const tempTypeEnums = {
-    C: "C",
-    F: "F",
-};
+enum tempTypeEnums {
+    C = "C",
+    F = "F",
+}
 
 function App(): JSX.Element {
     const [tempType, setTempType] = useState<string>(tempTypeEnums.F);
