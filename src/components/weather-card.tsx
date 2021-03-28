@@ -1,6 +1,7 @@
 import React from "react";
 import DegreeFormat from "./degree-format";
 import { computeTemp, get, unix } from "../utils";
+import "../styles/weather-card.scss";
 interface Props {
     item: Daily;
     handleOnClickWeatherCard: (data: Daily) => void;

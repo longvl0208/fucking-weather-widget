@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import CloseIcon from "../assets/icons/close.svg";
-
+import "../styles/search.scss";
 interface Props {
     onSearch: (value: string) => void;
 }
