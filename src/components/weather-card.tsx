@@ -1,11 +1,9 @@
 import React from "react";
 import DegreeFormat from "./degree-format";
-import moment from "moment";
-import { get } from "lodash";
-import { computeTemp } from "../utils";
+import { computeTemp, get, unix } from "../utils";
 interface Props {
-    item: object;
-    handleOnClickWeatherCar: (data: object) => void;
+    item: Daily;
+    handleOnClickWeatherCard: (data: Daily) => void;
     timezone: string;
     tempType: string;
 }
@@ -13,17 +11,17 @@ const REACT_APP_OPEN_WEATHER_ICON = "https://openweathermap.org/img/wn/";
 
 const WeatherCard = ({
     item,
-    handleOnClickWeatherCar,
+    handleOnClickWeatherCard,
     timezone,
     tempType,
 }: Props): JSX.Element => {
     return (
         <button
             className="weather-card"
-            onClick={() => handleOnClickWeatherCar(item)}
+            onClick={() => handleOnClickWeatherCard(item)}
         >
             <p className="day">
-                {moment.unix(get(item, "dt")).locale(timezone).format("ddd")}
+                {unix(get(item, "dt")).locale(timezone).format("ddd")}
             </p>
             <img
                 src={`${REACT_APP_OPEN_WEATHER_ICON}${get(

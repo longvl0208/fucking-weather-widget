@@ -1,108 +1,62 @@
 import React, { useState, useEffect, useMemo } from "react";
 import "./App.scss";
 import Search from "./components/search";
-import DegreeFormat from "./components/degree-format";
-import DegreeOptions from "./components/degree-options";
-import WeatherCard from "./components/weather-card";
-import { isEqual, get, map, cloneDeep, isEmpty } from "lodash";
-import { css } from "@emotion/react";
-import ClipLoader from "react-spinners/ClipLoader";
-import axios from "axios";
-import moment from "moment";
-import { computeTemp } from "./utils";
+import { AxiosError, AxiosResponse } from "axios";
+import { isEqual, cloneDeep, isEmpty, get } from "./utils";
 import EmptyData from "./components/empty-data";
-
-const REACT_APP_OPEN_WEATHER_MAP_KEY =
-    process.env.REACT_APP_OPEN_WEATHER_MAP_KEY;
-const REACT_APP_OPEN_WEATHER_API = process.env.REACT_APP_OPEN_WEATHER_API;
-const REACT_APP_OPEN_WEATHER_ICON = process.env.REACT_APP_OPEN_WEATHER_ICON;
-const REACT_APP_AIR_POPULATION_DATA_API =
-    process.env.REACT_APP_AIR_POPULATION_DATA_API;
-
-const override = css`
-    display: block;
-    margin: 0 auto;
-    border-color: red;
-`;
-
-const defaultCoordinate = {
-    country: "Unknown",
-    lat: 0,
-    local_names: "Unknown",
-    lon: 0,
-    name: "Unknown",
-};
-
-enum tempTypeEnums {
-    C = "C",
-    F = "F",
-}
+import LoadingSpinner from "./components/loading-spinner";
+import MainInfo from "./components/main-info";
+import WeatherInWeek from "./components/weather-in-week";
+import { AirQuality, TempTypeEnums } from "./enums";
+import LocationService from "./services/location";
+import WeatherDataService from "./services/weather";
 
 function App(): JSX.Element {
-    const [tempType, setTempType] = useState<string>(tempTypeEnums.F);
-    const [color] = useState<string>("#ffffff");
+    const [tempType, setTempType] = useState<TempTypeEnums>(TempTypeEnums.F);
     const [loading, setLoading] = useState<boolean>(true);
-    const [coordinate, setCoordinate] = useState(defaultCoordinate);
-    const [weatherData, setWeatherData] = useState({});
-    const [mainData, setMainData] = useState({});
-    const [airPopulate, setAirPopulate] = useState(0);
+    const [coordinate, setCoordinate] = useState<LocationLatLongResponse>();
+    const [weatherData, setWeatherData] = useState<
+        Partial<WeatherDataResponse>
+    >({});
+    const [mainData, setMainData] = useState<Current | {}>({});
+    const [airPopulate, setAirPopulate] = useState<number>(0);
 
-    const fetchLocationLatLong = (value: string) => {
+    const fetchLocationLatLong = (value: string): void => {
         setLoading(true);
-        axios
-            .get(`${REACT_APP_OPEN_WEATHER_API}`, {
-                params: {
-                    q: value,
-                    limit: 5,
-                    appid: REACT_APP_OPEN_WEATHER_MAP_KEY,
-                },
-            })
-            .then((response) => {
-                const { data } = response;
-                setCoordinate({ ...data[0] });
-            })
-            .catch((error) => {
+        setTempType(TempTypeEnums.F);
+        LocationService.getLocation(value)
+            .then(
+                (response: AxiosResponse<LocationLatLongResponse[]>): void => {
+                    const { data } = response;
+                    setCoordinate({ ...data[0] });
+                }
+            )
+            .catch((error: AxiosError): void => {
                 console.log("error", error);
             })
-            .finally(() => {
+            .finally((): void => {
                 setLoading(false);
             });
     };
 
-    const getCurrentAirPopulationData = (lat: number, lon: number) => {
-        axios
-            .get(`${REACT_APP_AIR_POPULATION_DATA_API}`, {
-                params: {
-                    lat,
-                    lon,
-                    appid: REACT_APP_OPEN_WEATHER_MAP_KEY,
-                },
-            })
-            .then((response) => {
+    const getCurrentAirPopulationData = (lat: number, lon: number): void => {
+        WeatherDataService.getAirPopulationData(lat, lon)
+            .then((response: AxiosResponse<AirPollutionResponse>): void => {
                 const { data } = response;
                 setAirPopulate(data.list[0].main.aqi);
             })
-            .catch((error) => {
+            .catch((error: AxiosError): void => {
                 console.log("error", error);
             })
-            .finally(() => {
+            .finally((): void => {
                 setLoading(false);
             });
     };
 
-    const getWeather = (lat: number, lon: number) => {
+    const getWeather = (lat: number, lon: number): void => {
         setLoading(true);
-        axios
-            .get(`https://api.openweathermap.org/data/2.5/onecall?`, {
-                params: {
-                    lat,
-                    lon,
-                    exclude: "alerts",
-                    units: tempType === tempTypeEnums.F ? "imperial" : "metric",
-                    appid: REACT_APP_OPEN_WEATHER_MAP_KEY,
-                },
-            })
-            .then((response) => {
+        WeatherDataService.getWeatherData(lat, lon, tempType)
+            .then((response: AxiosResponse<WeatherDataResponse>): void => {
                 const { data } = response;
                 getCurrentAirPopulationData(lat, lon);
                 setWeatherData({
@@ -113,51 +67,51 @@ function App(): JSX.Element {
                 });
                 setMainData({ ...data.current });
             })
-            .catch((error) => {
+            .catch((error: AxiosError): void => {
                 setWeatherData({});
                 setMainData({});
             })
-            .finally(() => {
+            .finally((): void => {
                 setLoading(false);
             });
     };
 
-    const onSearchLocation = (value: string) => {
+    const onSearchLocation = (value: string): void => {
         fetchLocationLatLong(value);
     };
 
-    useEffect(() => {
+    useEffect((): void => {
         fetchLocationLatLong("hanoi");
     }, []);
 
-    useEffect(() => {
-        if (!isEqual(coordinate, defaultCoordinate))
-            getWeather(coordinate.lat, coordinate.lon);
+    useEffect((): void => {
+        if (!isEqual(coordinate, {}))
+            getWeather(get(coordinate, "lat", 0), get(coordinate, "lon", 0));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [coordinate]);
 
-    const handleChangeTempType = (value: string) => {
+    const handleChangeTempType = (value: TempTypeEnums): void => {
         setTempType(value);
     };
 
-    const handleOnClickWeatherCar = (data: object) => {
+    const handleOnClickWeatherCard = (data: Daily): void => {
         const newData = cloneDeep({ ...data, isSubData: true });
         setMainData(newData);
     };
 
-    const calculateAirQuanlity = useMemo(() => {
+    const calculateAirQuality = useMemo((): AirQuality | undefined => {
         const aqi = airPopulate;
         switch (aqi) {
             case 1:
-                return "Good";
+                return AirQuality.Good;
             case 2:
-                return "Fair";
+                return AirQuality.Fair;
             case 3:
-                return "Moderate";
+                return AirQuality.Moderate;
             case 4:
-                return "Poor";
+                return AirQuality.Poor;
             case 5:
-                return "Very Poor";
+                return AirQuality.VeryPoor;
 
             default:
                 break;
@@ -167,124 +121,26 @@ function App(): JSX.Element {
     return (
         <div className="App">
             <div>
-                <div className="search-input">
-                    <Search onSearch={onSearchLocation} />
-                </div>
+                <Search onSearch={onSearchLocation} />
                 {loading ? (
-                    <ClipLoader
-                        color={color}
-                        loading={loading}
-                        css={override}
-                        size={150}
-                    />
+                    <LoadingSpinner loading={loading} />
                 ) : isEmpty(weatherData) ? (
                     <EmptyData />
                 ) : (
                     <div className="weather-details">
-                        <div className="main-info">
-                            <p className="location">
-                                {coordinate.name}, {coordinate.country}
-                            </p>
-                            <p className="h-32 main-weather">
-                                {!isEmpty(mainData)
-                                    ? `${moment
-                                          .unix(get(mainData, "dt"))
-                                          .locale(get(weatherData, "timezone"))
-                                          .format("dddd")} ${
-                                          !get(mainData, "isSubData")
-                                              ? moment
-                                                    .unix(get(mainData, "dt"))
-                                                    .locale(
-                                                        get(
-                                                            weatherData,
-                                                            "timezone"
-                                                        )
-                                                    )
-                                                    .format("H:mm A")
-                                              : ""
-                                      }`
-                                    : ""}
-                                &nbsp;•{" "}
-                                {!isEmpty(mainData) &&
-                                    get(mainData, "weather[0].description")}
-                            </p>
-                            <div className="display-flex">
-                                <div className="right-content">
-                                    <img
-                                        src={
-                                            !isEmpty(mainData)
-                                                ? `${REACT_APP_OPEN_WEATHER_ICON}${get(
-                                                      mainData,
-                                                      "weather[0].icon"
-                                                  )}@2x.png`
-                                                : ""
-                                        }
-                                        alt="icon"
-                                        className="mr-12"
-                                        height={50}
-                                        width={50}
-                                    />
-                                    <DegreeFormat
-                                        number={
-                                            !isEmpty(mainData) &&
-                                            !get(mainData, "isSubData")
-                                                ? computeTemp(
-                                                      get(mainData, "temp"),
-                                                      tempType
-                                                  )
-                                                : computeTemp(
-                                                      get(mainData, "temp.max"),
-                                                      tempType
-                                                  )
-                                        }
-                                        className="mr-6 main-degree"
-                                    />
-                                    <DegreeOptions
-                                        tempType={tempType}
-                                        onChangeTempType={handleChangeTempType}
-                                    />
-                                </div>
-                                <div className="left-content">
-                                    <p>
-                                        Humidity:{" "}
-                                        {!isEmpty(mainData) &&
-                                            get(mainData, "humidity")}
-                                        %
-                                    </p>
-                                    <p>
-                                        Wind:{" "}
-                                        {!isEmpty(mainData) &&
-                                            get(mainData, "wind_speed")}
-                                        &nbsp;KPH SE
-                                    </p>
-                                    {!isEmpty(mainData) &&
-                                    !get(mainData, "isSubData") ? (
-                                        <p>
-                                            Air Quality: {calculateAirQuanlity}
-                                        </p>
-                                    ) : (
-                                        ""
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                        <div className="weather-weekdays">
-                            {weatherData && get(weatherData, "daily") ? (
-                                map(get(weatherData, "daily"), (item) => (
-                                    <WeatherCard
-                                        key={item.dt}
-                                        item={item}
-                                        timezone={get(weatherData, "timezone")}
-                                        tempType={tempType}
-                                        handleOnClickWeatherCar={
-                                            handleOnClickWeatherCar
-                                        }
-                                    />
-                                ))
-                            ) : (
-                                <></>
-                            )}
-                        </div>
+                        <MainInfo
+                            calculateAirQuality={calculateAirQuality}
+                            coordinate={coordinate}
+                            handleChangeTempType={handleChangeTempType}
+                            mainData={mainData}
+                            tempType={tempType}
+                            weatherData={weatherData}
+                        />
+                        <WeatherInWeek
+                            handleOnClickWeatherCard={handleOnClickWeatherCard}
+                            weatherData={weatherData}
+                            tempType={tempType}
+                        />
                     </div>
                 )}
             </div>
